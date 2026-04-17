@@ -52,7 +52,7 @@ export class LoggerService {
     }
 
     #addMeta(message: string, level: string, addTimestamp = this.time){
-        return addTimestamp ? `[${(new Date()).toISOString()}]` : "" + ` [${level}] ` + message
+        return (addTimestamp ? `[${(new Date()).toISOString()}]` : "") + ` [${level}] ` + message
     }
 
     #levelAccept(level: logLevel | logSilent, customLogRule: logLevel | logSilent =  this.logLevel){
