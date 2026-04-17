@@ -55,7 +55,7 @@ class LoggerService {
         return addTimestamp ? `[${(new Date()).toISOString()}]` : "" + ` [${level}] ` + message
     }
 
-    #levelAccept(level: logLevel | logSilent, customLogRule: logLevel | logSilent = this.logLevel){
+    #levelAccept(level: logLevel | logSilent, customLogRule: logLevel | logSilent =  this.logLevel){
         return logLevelValue[customLogRule] <= logLevelValue[level]
     }
 
@@ -91,6 +91,26 @@ class LoggerService {
             it.#log("DEBUG", `Arguments are ${args}`, {customLogRule});
             try {
                 const result: any = func(...args);
+                it.#log("INFO", `Finished ${func.name} in ${performance.now() - startTime} ms`, {customLogRule});
+                it.#log("DEBUG", `Execution result of ${func.name} is ${result}`, {customLogRule})
+                return result;
+            } catch (err){
+                if (err instanceof Error) {
+                    it.#log("ERROR", `${func.name} threw ${err.stack}`, {customLogRule});
+                    throw err;
+                } else throw "Error is not an error"
+            }
+        }
+    }
+
+    async setAsyncLogger<T extends (...args: any[]) => any>(func: T, customLogRule: logLevel): Promise<(...args: Parameters<T>) => Promise<ReturnType<T>>> {
+        const it = this;
+        return async function (...args: any[]): Promise<ReturnType<T>>{
+            it.#log("INFO", `Entering ${func.name}`, {customLogRule});
+            const startTime = performance.now()
+            it.#log("DEBUG", `Arguments are ${args}`, {customLogRule});
+            try {
+                const result: any = await func(...args);
                 it.#log("INFO", `Finished ${func.name} in ${performance.now() - startTime} ms`, {customLogRule});
                 it.#log("DEBUG", `Execution result of ${func.name} is ${result}`, {customLogRule})
                 return result;
