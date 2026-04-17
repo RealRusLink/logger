@@ -1,4 +1,4 @@
-import type {loggerOptions, logLevel, LoggerService} from './loggerService';
+import type {loggerOptions, logLevel, LoggerService} from './loggerService.js';
 const colors = {
     reset: "\x1b[0m",
     red: "\x1b[31m",
