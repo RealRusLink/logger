@@ -83,7 +83,7 @@ export class LoggerService {
         this.#log("TRACE", message, {addTimestamp})
     }
 
-    setLogger<T extends (...args: any[]) => any>(func: T, customLogRule: logLevel): (...args: Parameters<T>) => ReturnType<T> {
+    setLogger<T extends (...args: any[]) => any>(func: T, customLogRule: logLevel | logSilent = this.logLevel): (...args: Parameters<T>) => ReturnType<T> {
         const it = this;
         return function (...args: any[]): ReturnType<T>{
             it.#log("INFO", `Entering ${func.name}`, {customLogRule});
@@ -103,7 +103,7 @@ export class LoggerService {
         }
     }
 
-    async setAsyncLogger<T extends (...args: any[]) => any>(func: T, customLogRule: logLevel): Promise<(...args: Parameters<T>) => Promise<ReturnType<T>>> {
+    async setAsyncLogger<T extends (...args: any[]) => any>(func: T, customLogRule: logLevel | logSilent = this.logLevel): Promise<(...args: Parameters<T>) => Promise<ReturnType<T>>> {
         const it = this;
         return async function (...args: any[]): Promise<ReturnType<T>>{
             it.#log("INFO", `Entering ${func.name}`, {customLogRule});
