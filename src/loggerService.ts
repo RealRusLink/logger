@@ -55,12 +55,12 @@ class LoggerService {
         return addTimestamp ? `[${(new Date()).toISOString()}]` : "" + ` [${level}] ` + message
     }
 
-    #levelAccept(level: logLevel | logSilent){
-        return logLevelValue[this.logLevel] <= logLevelValue[level]
+    #levelAccept(level: logLevel | logSilent, customLogRule: logLevel | logSilent = this.logLevel){
+        return logLevelValue[customLogRule] <= logLevelValue[level]
     }
 
-    #log(level: logLevel | logSilent, message: string, addTimestamp = this.time){
-        if (this.#levelAccept(level) && level !== "SILENT"){
+    #log(level: logLevel | logSilent, message: string, {addTimestamp = this.time, customLogRule = this.logLevel} = {addTimestamp: this.time, customLogRule: this.logLevel}){
+        if (this.#levelAccept(level, customLogRule) && level !== "SILENT"){
             if (!this.structuredOutput) this.logLevelFunctions[level](this.#addMeta(message, level, addTimestamp))
             else this.logLevelFunctions[level](JSON.stringify({level, message, timestamp: addTimestamp ? (new Date()).toISOString() : undefined}))
         }
@@ -68,35 +68,35 @@ class LoggerService {
 
 
     error(message: string, addTimestamp = this.time){
-        this.#log("ERROR", message, addTimestamp)
+        this.#log("ERROR", message, {addTimestamp})
     }
 
     info(message: string, addTimestamp = this.time){
-        this.#log("INFO", message, addTimestamp)
+        this.#log("INFO", message, {addTimestamp})
     }
 
     debug(message: string, addTimestamp = this.time){
-        this.#log("DEBUG", message, addTimestamp)
+        this.#log("DEBUG", message, {addTimestamp})
     }
 
     trace(message: string, addTimestamp = this.time){
-        this.#log("TRACE", message, addTimestamp)
+        this.#log("TRACE", message, {addTimestamp})
     }
 
-    setLogger<T extends (...args: any[]) => any>(func: T): (...args: Parameters<T>) => ReturnType<T> {
+    setLogger<T extends (...args: any[]) => any>(func: T, customLogRule: logLevel): (...args: Parameters<T>) => ReturnType<T> {
         const it = this;
         return function (...args: any[]): ReturnType<T>{
-            it.#log("INFO", `Entering ${func.name}`);
+            it.#log("INFO", `Entering ${func.name}`, {customLogRule});
             const startTime = performance.now()
-            it.#log("DEBUG", `Arguments are ${args}`);
+            it.#log("DEBUG", `Arguments are ${args}`, {customLogRule});
             try {
                 const result: any = func(...args);
-                it.#log("INFO", `Finished ${func.name} in ${performance.now() - startTime} ms`);
-                it.#log("DEBUG", `Execution result of ${func.name} is ${result}`)
+                it.#log("INFO", `Finished ${func.name} in ${performance.now() - startTime} ms`, {customLogRule});
+                it.#log("DEBUG", `Execution result of ${func.name} is ${result}`, {customLogRule})
                 return result;
             } catch (err){
                 if (err instanceof Error) {
-                    it.#log("ERROR", `${func.name} threw ${err.stack}`);
+                    it.#log("ERROR", `${func.name} threw ${err.stack}`, {customLogRule});
                     throw err;
                 } else throw "Error is not an error"
             }
