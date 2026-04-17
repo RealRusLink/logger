@@ -1,0 +1,24 @@
+{
+  "name": "logger",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RealRusLink/logger.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/RealRusLink/logger/issues"
+  },
+  "homepage": "https://github.com/RealRusLink/logger#readme",
+  "dependencies": {
+    "typescript": "^6.0.3"
+  }
+}
