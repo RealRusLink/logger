@@ -56,7 +56,8 @@ export class LoggerService {
     }
 
     #levelAccept(level: logLevel | logSilent, customLogRule: logLevel | logSilent =  this.logLevel){
-        return logLevelValue[customLogRule] <= logLevelValue[level]
+        //console.log(`level is ${level}, custom level is ${customLogRule}, global level is ${this.logLevel}`)
+        return (logLevelValue[level] >= logLevelValue[customLogRule]) && (logLevelValue[level] >= logLevelValue[this.logLevel])
     }
 
     #log(level: logLevel | logSilent, message: string, {addTimestamp = this.time, customLogRule = this.logLevel} = {addTimestamp: this.time, customLogRule: this.logLevel}){
