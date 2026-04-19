@@ -104,7 +104,7 @@ export class LoggerService {
         }
     }
 
-    async setAsyncLogger<T extends (...args: any[]) => any>(func: T, customLogRule: logLevel | logSilent = this.logLevel): Promise<(...args: Parameters<T>) => Promise<ReturnType<T>>> {
+    setAsyncLogger<T extends (...args: any[]) => any>(func: T, customLogRule: logLevel | logSilent = this.logLevel): (...args: Parameters<T>) => Promise<ReturnType<T>> {
         const it = this;
         return async function (...args: any[]): Promise<ReturnType<T>>{
             it.#log("INFO", `Entering ${func.name}`, {customLogRule});
