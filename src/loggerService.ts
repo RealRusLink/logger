@@ -89,11 +89,11 @@ export class LoggerService {
         return function (...args: any[]): ReturnType<T>{
             it.#log("INFO", `Entering ${func.name}`, {customLogRule});
             const startTime = performance.now()
-            it.#log("DEBUG", `Arguments are ${args}`, {customLogRule});
+            it.#log("DEBUG", `Arguments are ${JSON.stringify(args)}`, {customLogRule});
             try {
                 const result: any = func(...args);
                 it.#log("INFO", `Finished ${func.name} in ${performance.now() - startTime} ms`, {customLogRule});
-                it.#log("DEBUG", `Execution result of ${func.name} is ${result}`, {customLogRule})
+                it.#log("DEBUG", `Execution result of ${func.name} is ${JSON.stringify(result)}`, {customLogRule})
                 return result;
             } catch (err){
                 if (err instanceof Error) {
@@ -109,11 +109,11 @@ export class LoggerService {
         return async function (...args: any[]): Promise<ReturnType<T>>{
             it.#log("INFO", `Entering ${func.name}`, {customLogRule});
             const startTime = performance.now()
-            it.#log("DEBUG", `Arguments are ${args}`, {customLogRule});
+            it.#log("DEBUG", `Arguments are ${JSON.stringify(args)}`, {customLogRule});
             try {
                 const result: any = await func(...args);
                 it.#log("INFO", `Finished ${func.name} in ${performance.now() - startTime} ms`, {customLogRule});
-                it.#log("DEBUG", `Execution result of ${func.name} is ${result}`, {customLogRule})
+                it.#log("DEBUG", `Execution result of ${func.name} is ${JSON.stringify(result)}`, {customLogRule})
                 return result;
             } catch (err){
                 if (err instanceof Error) {
