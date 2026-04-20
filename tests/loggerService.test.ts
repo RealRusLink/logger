@@ -45,12 +45,20 @@ describe('LoggerService', () => {
         it("shouldn't log anything below global level", () => {
             const logger = new LoggerService({ logLevel: 'ERROR' });
             const name = (name: string) => name;
-            const loggedName = logger.setLogger(name, "INFO");
+            const loggedName = logger.setLogger(name, {customLogRule: "INFO"});
             loggedName("hi");
             expect(logSpy).toHaveBeenCalledTimes(0);
             logger.logLevel = "INFO";
             loggedName("hi");
             expect(logSpy).toHaveBeenCalledTimes(2);
+        });
+
+        it("should log custom message", () => {
+            const logger = new LoggerService({ logLevel: 'IMPORTANT', time: false});
+            const name = (name: string) => name;
+            const loggedName = logger.setLogger(name, {customLogRule: "INFO", customMessage: "Running name", customMessageLevel: "IMPORTANT"});
+            loggedName("hi")
+            expect(logSpy).toHaveBeenCalledWith(" [IMPORTANT] Running name")
         })
 
     });
@@ -104,7 +112,7 @@ describe('LoggerService', () => {
 
             expect(result).toBe(5);
             expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Entering testFn'));
-            expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Arguments are 2,3'));
+            expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Arguments are [2,3]'));
             expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Finished testFn'));
             expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Execution result of testFn is 5'));
         });
@@ -118,10 +126,10 @@ describe('LoggerService', () => {
             expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('[ERROR] errorFn threw'));
         });
 
-        it('setAsyncLogger should handle promises correctly', async () => {
+        it('setLogger should handle promises correctly', async () => {
             const logger = new LoggerService({ logLevel: 'INFO', time: false });
             const asyncFn = async (val: string) => val;
-            const wrapped = await logger.setAsyncLogger(asyncFn);
+            const wrapped = await logger.setLogger(asyncFn);
 
             const result = await wrapped('hello');
 
