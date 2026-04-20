@@ -79,6 +79,16 @@ export class LoggerService {
         }
     }
 
+    #toString(something: any): string {
+        try {
+            return JSON.stringify(something)
+        }
+        catch
+        {
+            return "Unserializable object"
+        }
+    }
+
 
     important(message: string, addTimestamp = this.time){
         this.#log("IMPORTANT", message, {addTimestamp})
@@ -116,7 +126,7 @@ export class LoggerService {
         return function(...args: Parameters<T>): ReturnType<T> {
             it.#log("INFO", `Entering ${customName}`, { customLogRule });
             const startTime = performance.now();
-            it.#log("DEBUG", `Arguments are ${JSON.stringify(args)}`, { customLogRule });
+            it.#log("DEBUG", `Arguments are ${it.#toString(args)}`, { customLogRule });
 
             try {
                 const result = func(...args);
@@ -145,7 +155,7 @@ export class LoggerService {
 
     #handleSuccess(name: string, startTime: number, result: any, customLogRule: logLevel | logSilent) {
         this.#log("INFO", `Finished ${name} in ${performance.now() - startTime} ms`, { customLogRule });
-        this.#log("DEBUG", `Execution result of ${name} is ${JSON.stringify(result)}`, { customLogRule });
+        this.#log("DEBUG", `Execution result of ${name} is ${this.#toString(result)}`, { customLogRule });
     }
 
     #handleError(name: string, err: unknown, customLogRule: logLevel | logSilent) {
