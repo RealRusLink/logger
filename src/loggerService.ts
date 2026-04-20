@@ -124,6 +124,7 @@ export class LoggerService {
                     return result
                         .then((resolvedResult: any) => {
                             it.#handleSuccess(customName, startTime, resolvedResult, customLogRule);
+                            it.#handleSpecialMessage(customMessage, customLogRule, customMessageLevel);
                             return resolvedResult;
                         })
                         .catch((err: unknown) => {
