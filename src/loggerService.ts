@@ -1,9 +1,10 @@
-export type logLevel = "ERROR" | "INFO" | "DEBUG" | "TRACE"
+export type logLevel = "IMPORTANT" | "ERROR" | "INFO" | "DEBUG" | "TRACE"
 export type logSilent = "SILENT"
 
 const logLevelValue = {
     SILENT: 50,
     ERROR: 10,
+    IMPORTANT: 9,
     INFO: 8,
     DEBUG: 6,
     TRACE: 4
@@ -15,6 +16,7 @@ export interface loggerOptions {
     logFunction?: Function,
     logLevelFunctions?: {
         ERROR?: Function,
+        IMPORTANT?: Function,
         INFO?: Function,
         DEBUG?: Function,
         TRACE?: Function
@@ -23,11 +25,20 @@ export interface loggerOptions {
     time?: boolean
 }
 
+export interface setLoggerParameters {
+    customLogRule: logLevel | logSilent;
+    customName: string;
+    customMessage: string;
+    customMessageLevel: logLevel | logSilent
+}
+
+
 
 export class LoggerService {
     logLevel: logLevel | logSilent;
     logLevelFunctions: {
         ERROR: Function,
+        IMPORTANT: Function,
         INFO: Function,
         DEBUG: Function,
         TRACE: Function
@@ -39,6 +50,7 @@ export class LoggerService {
         const logFunction = loggerOptions.logFunction || console.log
         this.logLevelFunctions = {
             ERROR: logFunction,
+            IMPORTANT: logFunction,
             INFO: logFunction,
             DEBUG: logFunction,
             TRACE: logFunction
@@ -68,6 +80,10 @@ export class LoggerService {
     }
 
 
+    important(message: string, addTimestamp = this.time){
+        this.#log("IMPORTANT", message, {addTimestamp})
+    }
+
     error(message: string, addTimestamp = this.time){
         this.#log("ERROR", message, {addTimestamp})
     }
@@ -84,45 +100,65 @@ export class LoggerService {
         this.#log("TRACE", message, {addTimestamp})
     }
 
-    setLogger<T extends (...args: any[]) => any>(func: T, customLogRule: logLevel | logSilent = this.logLevel): (...args: Parameters<T>) => ReturnType<T> {
+
+    setLogger<T extends (...args: any[]) => any>(
+        func: T,
+        {
+            customLogRule = this.logLevel,
+            customName = func.name,
+            customMessage = "",
+            customMessageLevel = this.logLevel,
+        }: Partial<setLoggerParameters> = {}
+
+    ): (...args: Parameters<T>) => ReturnType<T> {
         const it = this;
-        return function (...args: any[]): ReturnType<T>{
-            it.#log("INFO", `Entering ${func.name}`, {customLogRule});
-            const startTime = performance.now()
-            it.#log("DEBUG", `Arguments are ${JSON.stringify(args)}`, {customLogRule});
+
+        return function(...args: Parameters<T>): ReturnType<T> {
+            it.#log("INFO", `Entering ${customName}`, { customLogRule });
+            const startTime = performance.now();
+            it.#log("DEBUG", `Arguments are ${JSON.stringify(args)}`, { customLogRule });
+
             try {
-                const result: any = func(...args);
-                it.#log("INFO", `Finished ${func.name} in ${performance.now() - startTime} ms`, {customLogRule});
-                it.#log("DEBUG", `Execution result of ${func.name} is ${JSON.stringify(result)}`, {customLogRule})
+                const result = func(...args);
+                if (result instanceof Promise || (result !== null && typeof result === 'object' && typeof result.then === 'function')) {
+                    return result
+                        .then((resolvedResult: any) => {
+                            it.#handleSuccess(customName, startTime, resolvedResult, customLogRule);
+                            return resolvedResult;
+                        })
+                        .catch((err: unknown) => {
+                            it.#handleError(customName, err, customLogRule);
+                            throw err;
+                        }) as ReturnType<T>;
+                }
+                it.#handleSuccess(customName, startTime, result, customLogRule);
+                it.#handleSpecialMessage(customMessage, customLogRule, customMessageLevel);
                 return result;
-            } catch (err){
-                if (err instanceof Error) {
-                    it.#log("ERROR", `${func.name} threw ${err.stack}`, {customLogRule});
-                    throw err;
-                } else throw "Error is not an error"
+
+            } catch (err) {
+                it.#handleError(customName, err, customLogRule);
+                throw err;
             }
+        };
+    }
+
+    #handleSuccess(name: string, startTime: number, result: any, customLogRule: logLevel | logSilent) {
+        this.#log("INFO", `Finished ${name} in ${performance.now() - startTime} ms`, { customLogRule });
+        this.#log("DEBUG", `Execution result of ${name} is ${JSON.stringify(result)}`, { customLogRule });
+    }
+
+    #handleError(name: string, err: unknown, customLogRule: logLevel | logSilent) {
+        if (err instanceof Error) {
+            this.#log("ERROR", `${name} threw ${err.stack}`, { customLogRule });
+        } else {
+            this.#log("ERROR", `${name} threw an unknown error`, { customLogRule });
         }
     }
 
-    setAsyncLogger<T extends (...args: any[]) => any>(func: T, customLogRule: logLevel | logSilent = this.logLevel): (...args: Parameters<T>) => Promise<ReturnType<T>> {
-        const it = this;
-        return async function (...args: any[]): Promise<ReturnType<T>>{
-            it.#log("INFO", `Entering ${func.name}`, {customLogRule});
-            const startTime = performance.now()
-            it.#log("DEBUG", `Arguments are ${JSON.stringify(args)}`, {customLogRule});
-            try {
-                const result: any = await func(...args);
-                it.#log("INFO", `Finished ${func.name} in ${performance.now() - startTime} ms`, {customLogRule});
-                it.#log("DEBUG", `Execution result of ${func.name} is ${JSON.stringify(result)}`, {customLogRule})
-                return result;
-            } catch (err){
-                if (err instanceof Error) {
-                    it.#log("ERROR", `${func.name} threw ${err.stack}`, {customLogRule});
-                    throw err;
-                } else throw "Error is not an error"
-            }
-        }
+    #handleSpecialMessage(message: string, customLogRule: logLevel | logSilent, messageLevel: logLevel | logSilent){
+        if (message !== "") this.#log(messageLevel, message, {customLogRule});
     }
+
 
 }
 
