@@ -123,13 +123,13 @@ export class LoggerService {
     ): (...args: Parameters<T>) => ReturnType<T> {
         const it = this;
 
-        return function(...args: Parameters<T>): ReturnType<T> {
+        return function(this: any, ...args: Parameters<T>): ReturnType<T> {
             it.#log("INFO", `Entering ${customName}`, { customLogRule });
             const startTime = performance.now();
             it.#log("DEBUG", `Arguments are ${it.#toString(args)}`, { customLogRule });
 
             try {
-                const result = func(...args);
+                const result = func.apply(this, args);
                 if (result instanceof Promise || (result !== null && typeof result === 'object' && typeof result.then === 'function')) {
                     return result
                         .then((resolvedResult: any) => {
@@ -151,6 +151,16 @@ export class LoggerService {
                 throw err;
             }
         };
+    }
+
+    setMultipleLoggers<T extends Record<string, (...args: any[]) => any>>(f: T): { [K in keyof T]: T[K] } {
+        const result = {} as { [K in keyof T]: T[K] };
+        for (const key in f) {
+            if (Object.prototype.hasOwnProperty.call(f, key) && f[key]) {
+                result[key] = this.setLogger(f[key]) as any;
+            }
+        }
+        return result;
     }
 
     #handleSuccess(name: string, startTime: number, result: any, customLogRule: logLevel | logSilent) {
