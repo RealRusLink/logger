@@ -138,4 +138,53 @@ describe('LoggerService', () => {
             expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Finished asyncFn'));
         });
     });
+    it('setLogger should preserve "this" context when wrapping class methods', () => {
+        const logger = new LoggerService({ logLevel: 'DEBUG', time: false });
+
+        class TestClass {
+            public prefix = "Value:";
+
+            public getValue(num: number): string {
+                return `${this.prefix} ${num}`;
+            }
+        }
+
+        const instance = new TestClass();
+
+        instance.getValue = logger.setLogger(instance.getValue);
+
+        const result = instance.getValue(42);
+
+        expect(result).toBe("Value: 42");
+
+        expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Entering getValue'));
+        expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Execution result of getValue is "Value: 42"'));
+    });
+
+    it('setLogger should work with class methods calling other class methods (recursion/nested)', () => {
+        const logger = new LoggerService({ logLevel: 'INFO', time: false });
+
+        class Calc {
+            multiplier = 2;
+
+            base(n: number) {
+                return n * this.multiplier;
+            }
+
+            double(n: number) {
+                return this.base(n);
+            }
+        }
+
+        const calc = new Calc();
+        calc.base = logger.setLogger(calc.base);
+        calc.double = logger.setLogger(calc.double);
+
+        const result = calc.double(5);
+
+        expect(result).toBe(10);
+        expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Entering double'));
+        expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Entering base'));
+    });
+
 });
