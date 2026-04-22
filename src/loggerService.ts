@@ -124,9 +124,9 @@ export class LoggerService {
         const it = this;
 
         return function(this: any, ...args: Parameters<T>): ReturnType<T> {
-            it.#log("INFO", `Entering ${customName}`, { customLogRule });
+            it.#log("DEBUG", `Entering ${customName}`, { customLogRule });
             const startTime = performance.now();
-            it.#log("DEBUG", `Arguments are ${it.#toString(args)}`, { customLogRule });
+            it.#log("TRACE", `Arguments are ${it.#toString(args)}`, { customLogRule });
 
             try {
                 const result = func.apply(this, args);
@@ -153,19 +153,58 @@ export class LoggerService {
         };
     }
 
-    setMultipleLoggers<T extends Record<string, (...args: any[]) => any>>(f: T): { [K in keyof T]: T[K] } {
-        const result = {} as { [K in keyof T]: T[K] };
-        for (const key in f) {
-            if (Object.prototype.hasOwnProperty.call(f, key) && f[key]) {
-                result[key] = this.setLogger(f[key]) as any;
+
+    setMultipleLoggers<T extends object>(instance: T): T {
+        const proto = Object.getPrototypeOf(instance);
+        if (!proto) return instance;
+
+        const methodNames = Object.getOwnPropertyNames(proto);
+
+        for (const methodName of methodNames) {
+            if (methodName === 'constructor' || methodName.startsWith('_')) continue;
+
+            const original = (instance as any)[methodName];
+
+            if (typeof original === 'function') {
+                (instance as any)[methodName] = this.setLogger(
+                    original.bind(instance), // Жестко привязываем контекст
+                    { customName: `${instance.constructor.name}.${methodName}` }
+                );
             }
         }
-        return result;
+
+        return instance;
+    }
+
+
+    wrapConstructor
+    <T extends new (...args: any[]) => any>
+    (Clazz: T,
+     {
+         customLogRule = this.logLevel,
+         customName = "",
+         customMessage = "",
+         customMessageLevel = this.logLevel,
+     }: Partial<setLoggerParameters> = {}): T {
+        const it = this;
+
+        return new Proxy(Clazz, {
+            construct(target, args, newTarget) {
+                const factory = (...factoryArgs: any[]) => Reflect.construct(target, factoryArgs, newTarget);
+                const loggedFactory = it.setLogger(factory, {
+                    customName: `${target.name} constructor`,
+                    customLogRule,
+                    customMessage,
+                    customMessageLevel
+                });
+                return loggedFactory(...args);
+            }
+        });
     }
 
     #handleSuccess(name: string, startTime: number, result: any, customLogRule: logLevel | logSilent) {
-        this.#log("INFO", `Finished ${name} in ${performance.now() - startTime} ms`, { customLogRule });
-        this.#log("DEBUG", `Execution result of ${name} is ${this.#toString(result)}`, { customLogRule });
+        this.#log("DEBUG", `Finished ${name} in ${performance.now() - startTime} ms`, { customLogRule });
+        this.#log("TRACE", `Execution result of ${name} is ${this.#toString(result)}`, { customLogRule });
     }
 
     #handleError(name: string, err: unknown, customLogRule: logLevel | logSilent) {
