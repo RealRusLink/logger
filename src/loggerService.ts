@@ -154,7 +154,7 @@ export class LoggerService {
     }
 
 
-    setMultipleLoggers<T extends object>(instance: T): T {
+    setMultipleLoggers<T extends object>(instance: T, level: logLevel | logSilent = this.logLevel): T {
         const proto = Object.getPrototypeOf(instance);
         if (!proto) return instance;
 
@@ -167,8 +167,8 @@ export class LoggerService {
 
             if (typeof original === 'function') {
                 (instance as any)[methodName] = this.setLogger(
-                    original.bind(instance), // Жестко привязываем контекст
-                    { customName: `${instance.constructor.name}.${methodName}` }
+                    original.bind(instance),
+                    { customName: `${instance.constructor.name}.${methodName}`, customLogRule: level }
                 );
             }
         }

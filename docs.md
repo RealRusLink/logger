@@ -262,6 +262,7 @@ loggedService.getUser("123");
 ```
 
 **Behavior:**
+- Custom log level can be used as second argument
 - Skips constructor and private methods (starting with `_`)
 - Binds methods to original context
 - Maintains `this` reference correctly
