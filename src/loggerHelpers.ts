@@ -15,8 +15,8 @@ export const consoleConfig: loggerOptions = {
         ERROR: (msg: string) => console.error(`${colors.red}${msg}${colors.reset}`),
         IMPORTANT: (msg: string) => console.log(`${colors.green}${msg}${colors.reset}`),
         INFO: (msg: string) => console.log(`${colors.blue}${msg}${colors.reset}`),
-        DEBUG: (msg: string) => console.log(`${colors.white}${msg}${colors.reset}`),
-        TRACE: (msg: string) => console.log(msg)
+        DEBUG: (msg: string) => console.log(msg),
+        TRACE: (msg: string) => console.log(`${colors.white}${msg}${colors.reset}`)
     }
 };
 
