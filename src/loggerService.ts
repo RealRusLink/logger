@@ -1,4 +1,4 @@
-export type logLevel = "IMPORTANT" | "ERROR" | "INFO" | "DEBUG" | "TRACE"
+export type logLevel = "IMPORTANT" | "ERROR" | "INFO" | "WARNING" | "DEBUG" | "TRACE"
 export type logSilent = "SILENT"
 
 const logLevelValue = {
@@ -6,6 +6,7 @@ const logLevelValue = {
     ERROR: 10,
     IMPORTANT: 9,
     INFO: 8,
+    WARNING: 7,
     DEBUG: 6,
     TRACE: 4
 }
@@ -19,10 +20,12 @@ export interface loggerOptions {
         IMPORTANT?: Function,
         INFO?: Function,
         DEBUG?: Function,
+        WARNING?: Function,
         TRACE?: Function
     },
     structuredOutput?: boolean,
-    time?: boolean
+    time?: boolean,
+    suppressedErrors?: Array<new (...args: any[]) => Error>
 }
 
 export interface setLoggerParameters {
@@ -41,10 +44,12 @@ export class LoggerService {
         IMPORTANT: Function,
         INFO: Function,
         DEBUG: Function,
+        WARNING: Function,
         TRACE: Function
     };
     structuredOutput: boolean;
     time: boolean;
+    suppressedErrors: Array<new (...args: any[]) => Error>;
     constructor(loggerOptions: loggerOptions) {
         this.logLevel = loggerOptions.logLevel;
         const logFunction = loggerOptions.logFunction || console.log
@@ -53,14 +58,20 @@ export class LoggerService {
             IMPORTANT: logFunction,
             INFO: logFunction,
             DEBUG: logFunction,
+            WARNING: logFunction,
             TRACE: logFunction
         }
-        let key: logLevel
-        for (key in loggerOptions.logLevelFunctions){
-            this.logLevelFunctions[key] = loggerOptions.logLevelFunctions?.[key] || logFunction;
+        let key: string;
+        const functions = loggerOptions.logLevelFunctions;
+        for (const key in functions) {
+            if (Object.prototype.hasOwnProperty.call(functions, key)) {
+                const k = key as keyof typeof functions;
+                this.logLevelFunctions[k] = functions[k] || logFunction;
+            }
         }
         this.structuredOutput = loggerOptions.structuredOutput !== undefined ? loggerOptions.structuredOutput : false;
         this.time = loggerOptions.time !== undefined ? loggerOptions.time : true;
+        this.suppressedErrors = loggerOptions.suppressedErrors || [];
     }
 
     #addMeta(message: string, level: string, addTimestamp = this.time){
@@ -68,7 +79,6 @@ export class LoggerService {
     }
 
     #levelAccept(level: logLevel | logSilent, customLogRule: logLevel | logSilent =  this.logLevel){
-        //console.log(`level is ${level}, custom level is ${customLogRule}, global level is ${this.logLevel}`)
         return (logLevelValue[level] >= logLevelValue[customLogRule]) && (logLevelValue[level] >= logLevelValue[this.logLevel])
     }
 
@@ -101,6 +111,11 @@ export class LoggerService {
     info(message: string, addTimestamp = this.time){
         this.#log("INFO", message, {addTimestamp})
     }
+
+    warn(message: string, addTimestamp = this.time){
+        this.#log("WARNING", message, {addTimestamp})
+    }
+
 
     debug(message: string, addTimestamp = this.time){
         this.#log("DEBUG", message, {addTimestamp})
@@ -209,7 +224,11 @@ export class LoggerService {
 
     #handleError(name: string, err: unknown, customLogRule: logLevel | logSilent) {
         if (err instanceof Error) {
-            this.#log("ERROR", `${name} threw ${err.stack}`, { customLogRule });
+            if (this.#isSuppressedError(err)) {
+                this.#log("WARNING", `${name} threw ${err.message}`, {customLogRule})
+            } else {
+                this.#log("ERROR", `${name} threw ${err.stack}`, {customLogRule});
+            }
         } else {
             this.#log("ERROR", `${name} threw an unknown error`, { customLogRule });
         }
@@ -217,6 +236,13 @@ export class LoggerService {
 
     #handleSpecialMessage(message: string, customLogRule: logLevel | logSilent, messageLevel: logLevel | logSilent){
         if (message !== "") this.#log(messageLevel, message, {customLogRule});
+    }
+
+    #isSuppressedError(err: Error){
+        for (let ErrType of this.suppressedErrors){
+            if (err instanceof ErrType) return true;
+        }
+        return false;
     }
 
 
