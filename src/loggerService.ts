@@ -218,7 +218,7 @@ export class LoggerService {
     }
 
     #handleSuccess(name: string, startTime: number, result: any, customLogRule: logLevel | logSilent) {
-        this.#log("DEBUG", `Finished ${name} in ${performance.now() - startTime} ms`, { customLogRule });
+        this.#log("DEBUG", `Finished ${name} in ${Math.round(performance.now() - startTime)} ms`, { customLogRule });
         this.#log("TRACE", `Execution result of ${name} is ${this.#toString(result)}`, { customLogRule });
     }
 
